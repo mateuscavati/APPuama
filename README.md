@@ -1,4 +1,4 @@
-# APPuama Racing - Plataforma Desktop Offline-First
+# APPuama Racing - Plataforma Desktop de Análise de Desempenho
 
 Esta é a versão Desktop da Plataforma de Análise da equipe Apuama de Fórmula SAE. O sistema foi transformado em um aplicativo autônomo que funciona **100% offline**, utilizando um banco de dados local para persistência de dados.
 
