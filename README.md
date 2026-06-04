@@ -1,4 +1,4 @@
-# APPuama Racing - Plataforma Desktop Offline-First
+# APPuama Racing - Plataforma Desktop de Análise de Desempenho
 
 Esta é a versão Desktop da Plataforma de Análise da equipe Apuama de Fórmula SAE. O sistema foi transformado em um aplicativo autônomo que funciona **100% offline**, utilizando um banco de dados local para persistência de dados.
 
@@ -50,6 +50,16 @@ Para rodar com Hot Reload (atualização automática ao salvar):
 ## 📦 Como Gerar o Executável
 
 ### Para Linux (.AppImage)
+Entrar na pasta "frontend-apuama"
+rodar:
+```bash
+npm install
+```
+depois rodar na raiz:
+```bash
+npm install
+```
+e depois:
 ```bash
 npm run electron:build:linux
 ```
@@ -61,6 +71,16 @@ chmod +x dist/*.AppImage
 
 ### Para Windows (.exe)
 *Requer Wine se estiver no Linux, ou rodar diretamente no Windows.*
+Entrar na pasta "frontend-apuama"
+rodar:
+```bash
+npm install
+```
+depois rodar na raiz:
+```bash
+npm install
+```
+e depois:
 ```bash
 npm run electron:build:win
 ```
