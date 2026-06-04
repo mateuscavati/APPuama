@@ -1,0 +1,33 @@
+{
+  "name": "appuama-racing-desktop",
+  "version": "1.0.0",
+  "description": "Aplicativo Desktop Offline-First da equipe Apuama",
+  "author": "Mateus",
+  "main": "main.js",
+  "scripts": {
+    "frontend:build": "cd frontend-apuama && npm run build",
+    "electron:dev": "electron . --no-sandbox",
+    "electron:build:win": "npm run frontend:build && electron-builder build --win --publish never",
+    "electron:build:linux": "npm run frontend:build && electron-builder build --linux --publish never",
+    "electron:build": "npm run electron:build:win"
+  },
+  "build": {
+    "appId": "com.appuama.racing",
+    "productName": "APPuama Racing",
+    "directories": {
+      "output": "dist"
+    },
+    "files": [
+      "main.js",
+      "preload.js",
+      "frontend-apuama/out/**/*"
+    ],
+    "win": {
+      "target": "portable"
+    }
+  },
+  "devDependencies": {
+    "electron": "^41.7.1",
+    "electron-builder": "^26.8.1"
+  }
+}

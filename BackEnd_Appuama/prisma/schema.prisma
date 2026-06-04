@@ -1,0 +1,131 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// 1. USUARIO (Aprovacao e Permissao de Admin)
+model Usuario {
+  id              Int            @id @default(autoincrement())
+  nomeCompleto    String         @map("nome_completo")
+  email           String         @unique
+  matricula       String         @unique
+  posicaoEquipe   String         @map("posicao_equipe")
+  senhaHash       String         @map("senha_hash") // Senha criptografada
+  isAdmin         Boolean        @default(false) @map("is_admin")
+  isAprovado      Boolean        @default(false) @map("is_aprovado")
+  
+  reports         TesteReport[]
+  
+  @@map("usuario") // Nome da tabela no banco de dados
+}
+
+// 2. CARRO
+model Carro {
+  id              Int            @id @default(autoincrement())
+  nome            String
+  modelo          String
+  ano             Int?           // Pode ser nulo
+  entreEixo       Decimal        @map("entre_eixo") @db.Decimal(10, 3)
+  distanciaRodas  Decimal        @map("distancia_rodas") @db.Decimal(10, 3)
+  
+  reports         TesteReport[]
+  balanceamentos  Balanceamento[]
+
+  @@map("carro")
+}
+
+// 3. BALANCEAMENTO
+model Balanceamento {
+  id                        Int             @id @default(autoincrement())
+  carroId                   Int             @map("carro_id")
+  dataRegistro              DateTime        @default(now()) @map("data_registro")
+  pesoPiloto                Decimal?        @map("peso_piloto") @db.Decimal(10, 2)
+  pesoRodaDianteiraE        Decimal         @map("peso_roda_dianteira_e") @db.Decimal(10, 2)
+  pesoRodaDianteiraD        Decimal         @map("peso_roda_dianteira_d") @db.Decimal(10, 2)
+  pesoRodaTraseiraE         Decimal         @map("peso_roda_traseira_e") @db.Decimal(10, 2)
+  pesoRodaTraseiraD         Decimal         @map("peso_roda_traseira_d") @db.Decimal(10, 2)
+  distDianteiraTraseira     Decimal?        @map("dist_dianteira_traseira") @db.Decimal(5, 2)
+  distEsquerdaDireita       Decimal?        @map("dist_esquerda_direita") @db.Decimal(5, 2)
+  distDiagonal              Decimal?        @map("dist_diagonal") @db.Decimal(5, 2)
+  pesoTotalCarro            Decimal?        @map("peso_total_carro") @db.Decimal(10, 2)
+  
+  carro                     Carro           @relation(fields: [carroId], references: [id])
+  reports                   TesteReport[]
+
+  @@map("balanceamento")
+}
+
+// 4. TESTE_REPORT (Com Pneus, Molas e FK para Balanceamento)
+model TesteReport {
+  id                      Int                 @id @default(autoincrement())
+  carroId                 Int                 @map("carro_id")
+  usuarioId               Int                 @map("usuario_id") // Quem criou o report
+  balanceamentoId         Int?                @map("balanceamento_id") // FK para BALANCEAMENTO
+  
+  pilotoNome              String?             @map("piloto_nome")
+  tipoSessao              String?             @map("tipo_sessao")
+  dataTeste               DateTime?           @map("data_teste") @db.Date
+  horaInicio              DateTime?           @map("hora_inicio") @db.Time(0)
+  horaFim                 DateTime?           @map("hora_fim") @db.Time(0)
+  tempoTotal              String?             @map("tempo_total") // Usamos String ou Time, Time é mais complexo aqui
+  distanciaPercorrida     Decimal?            @map("distancia_percorrida") @db.Decimal(10, 2)
+  errosMecanicos          Int                 @default(0) @map("erros_mecanicos")
+  errosHumanos            Int                 @default(0) @map("erros_humanos")
+  observacoesPiloto       String?             @map("observacoes_piloto") @db.Text
+  
+  // Dados de Pneus (Exemplo de 32 colunas no total, 8 por roda)
+  pressaoDEAntes          Decimal?            @map("pressao_de_antes") @db.Decimal(7, 2)
+  pressaoDEDepois         Decimal?            @map("pressao_de_depois") @db.Decimal(7, 2)
+  desgasteDEAntes         Decimal?            @map("desgaste_de_antes") @db.Decimal(7, 2)
+  desgasteDEDepois        Decimal?            @map("desgaste_de_depois") @db.Decimal(7, 2)
+
+  pressaoDDAntes          Decimal?            @map("pressao_dd_antes") @db.Decimal(7, 2)
+  pressaoDDDepois        Decimal?            @map("pressao_dd_depois") @db.Decimal(7, 2)
+  desgasteDDAntes         Decimal?            @map("desgaste_dd_antes") @db.Decimal(7, 2)
+  desgasteDDDepois        Decimal?            @map("desgaste_dd_depois") @db.Decimal(7, 2)
+
+  pressaoTEAntes          Decimal?            @map("pressao_te_antes") @db.Decimal(7, 2)
+  pressaoTEDepois         Decimal?            @map("pressao_te_depois") @db.Decimal(7, 2)
+  desgasteTEAntes         Decimal?            @map("desgaste_te_antes") @db.Decimal(7, 2)
+  desgasteTEDepois        Decimal?            @map("desgaste_te_depois") @db.Decimal(7, 2)
+
+  pressaoTDAntes          Decimal?            @map("pressao_td_antes") @db.Decimal(7, 2)
+  pressaoTDDepois         Decimal?            @map("pressao_td_depois") @db.Decimal(7, 2)
+  desgasteTDAntes         Decimal?            @map("desgaste_td_antes") @db.Decimal(7, 2)
+  desgasteTDDepois        Decimal?            @map("desgaste_td_depois") @db.Decimal(7, 2)
+  // ... e assim por diante para DT, TE, TD
+  
+  // Dados de Molas (4 colunas)
+  tamanhoMolaDE           Decimal?            @map("tamanho_mola_de") @db.Decimal(7, 2)
+  tamanhoMolaDD           Decimal?            @map("tamanho_mola_dd") @db.Decimal(7, 2)
+  tamanhoMolaTE           Decimal?            @map("tamanho_mola_te") @db.Decimal(7, 2)
+  tamanhoMolaTD           Decimal?            @map("tamanho_mola_td") @db.Decimal(7, 2)
+
+  balanceFrontPercentage  Decimal?            @map("balance_front_percentage") @db.Decimal(5, 2)
+  balanceRearPercentage   Decimal?            @map("balance_rear_percentage") @db.Decimal(5, 2)
+  balanceLeftPercentage   Decimal?            @map("balance_left_percentage") @db.Decimal(5, 2)
+  balanceRightPercentage  Decimal?            @map("balance_right_percentage") @db.Decimal(5, 2)
+  
+  carro                   Carro               @relation(fields: [carroId], references: [id])
+  usuario                 Usuario             @relation(fields: [usuarioId], references: [id])
+  balanceamento           Balanceamento?      @relation(fields: [balanceamentoId], references: [id])
+  
+  @@map("teste_report")
+}
+
+// 5. CHECKLIST (Itens mestres que o Admin define)
+model ChecklistItem {
+  id              Int            @id @default(autoincrement())
+  area            String
+  descricaoItem   String         @map("descricao_item")
+
+  @@unique([area, descricaoItem]) // Não pode haver o mesmo item na mesma área
+  @@map("checklist")
+}
