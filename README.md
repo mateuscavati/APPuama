@@ -50,6 +50,16 @@ Para rodar com Hot Reload (atualização automática ao salvar):
 ## 📦 Como Gerar o Executável
 
 ### Para Linux (.AppImage)
+Entrar na pasta "frontend-apuama"
+rodar:
+```bash
+npm install
+```
+depois rodar na raiz:
+```bash
+npm install
+```
+e depois:
 ```bash
 npm run electron:build:linux
 ```
@@ -61,6 +71,16 @@ chmod +x dist/*.AppImage
 
 ### Para Windows (.exe)
 *Requer Wine se estiver no Linux, ou rodar diretamente no Windows.*
+Entrar na pasta "frontend-apuama"
+rodar:
+```bash
+npm install
+```
+depois rodar na raiz:
+```bash
+npm install
+```
+e depois:
 ```bash
 npm run electron:build:win
 ```
