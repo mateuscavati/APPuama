@@ -17,7 +17,7 @@ function createWindow() {
       contextIsolation: true,
       preload: path.join(__dirname, 'preload.js'),
     },
-    icon: path.join(__dirname, 'frontend-apuama/public/icon.svg'),
+    icon: path.join(__dirname, 'frontend-apuama/public/Logo_APU.png'),
   });
 
   if (isDev) {

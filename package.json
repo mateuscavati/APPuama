@@ -22,8 +22,17 @@
       "preload.js",
       "frontend-apuama/out/**/*"
     ],
+    "icon": "frontend-apuama/public/Logo_APU.png",
     "win": {
+      "icon": "frontend-apuama/public/Logo_APU.ico",
       "target": "portable"
+    },
+    "linux": {
+      "icon": "frontend-apuama/public/Logo_APU.svg",
+      "category": "Utility",
+      "target": [
+        "AppImage"
+      ]
     }
   },
   "devDependencies": {
