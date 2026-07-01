@@ -162,7 +162,7 @@ export default function ReportsPage() {
   }
 
   const addReport = async () => { // Make it async
-    if (!selectedCarId || !currentUser || !formData.pilotoNome.trim() || !formData.horaInicio || !formData.horaFim) {
+    if (!selectedCarId || !currentUser || !formData.pilotoNome?.trim() || !formData.horaInicio || !formData.horaFim) {
       toast({
         title: "Erro de Validação",
         description: "Preencha todos os campos obrigatórios: Carro, Piloto, Hora Início e Hora Fim.",
@@ -181,7 +181,7 @@ export default function ReportsPage() {
         ...formData,
         carroId: Number(selectedCarId),
         usuarioId: currentUser.id,
-        balanceamentoId: lastBalance?.id,
+        balanceamentoId: lastBalance?.id ? Number(lastBalance.id) : undefined,
         horaInicio: horaInicio,
         horaFim: horaFim,
         tempoTotal: calculateTestDuration(),
@@ -202,7 +202,7 @@ export default function ReportsPage() {
     } catch (error) {
       toast({
         title: "Erro ao Salvar",
-        description: `Erro ao salvar report: ${error.message || 'Erro desconhecido'}`,
+        description: `Erro ao salvar report: ${(error as any).message || 'Erro desconhecido'}`,
         variant: "destructive",
       })
     }
@@ -238,6 +238,45 @@ export default function ReportsPage() {
     
   }
 
+  const formatDuration = (report: Report) => {
+    if (report.tempoTotal) {
+      const parts = report.tempoTotal.split(":");
+      if (parts.length === 2) {
+        const hours = parseInt(parts[0], 10);
+        const minutes = parseInt(parts[1], 10);
+        if (!isNaN(hours) && !isNaN(minutes)) {
+          if (hours > 0) {
+            return `${hours}h ${minutes}min`;
+          }
+          return `${minutes} min`;
+        }
+      }
+      return report.tempoTotal;
+    }
+
+    if (report.horaInicio && report.horaFim) {
+      try {
+        const start = new Date(report.horaInicio);
+        const end = new Date(report.horaFim);
+        if (!isNaN(start.getTime()) && !isNaN(end.getTime())) {
+          const diffMs = end.getTime() - start.getTime();
+          const diffMins = Math.round(diffMs / 60000);
+          if (diffMins >= 0) {
+            const hours = Math.floor(diffMins / 60);
+            const minutes = diffMins % 60;
+            if (hours > 0) {
+              return `${hours}h ${minutes}min`;
+            }
+            return `${minutes} min`;
+          }
+        }
+      } catch (e) {
+        // ignore fallback if parsing fails
+      }
+    }
+    return "N/A";
+  };
+
   const deleteReport = async (id: string) => {
     if (window.confirm(`Tem certeza que deseja excluir o report ${id}?`)) {
       try {
@@ -250,7 +289,7 @@ export default function ReportsPage() {
       } catch (error) {
         toast({
           title: "Erro ao Excluir",
-          description: `Erro ao excluir report: ${error.message || 'Erro desconhecido'}`,
+          description: `Erro ao excluir report: ${(error as any).message || 'Erro desconhecido'}`,
           variant: "destructive",
         })
       }
@@ -843,7 +882,7 @@ export default function ReportsPage() {
                         <div>
                           <span className="text-muted-foreground">Tempo:</span>{" "}
                           <span className="text-primary ml-1">
-                            {report.horaInicio} - {report.horaFim}
+                            {formatDuration(report)}
                           </span>
                         </div>
                         <div>

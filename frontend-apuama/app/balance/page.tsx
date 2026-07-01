@@ -5,7 +5,8 @@ import Link from "next/link"
 import { useAuth } from "@/contexts/auth-context"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
-import { ArrowLeft, RefreshCw } from "lucide-react"
+import { ArrowLeft, RefreshCw, Trash2 } from "lucide-react"
+import { db } from "@/lib/db"
 
 interface WheelWeights {
   frontLeft: number
@@ -24,6 +25,7 @@ export default function BalancePage() {
     rearLeft: 0,
     rearRight: 0,
   })
+  const [balancesHistory, setBalancesHistory] = useState<any[]>([])
 
   useEffect(() => {
     fetchCars(); // Fetch cars when component mounts
@@ -37,7 +39,8 @@ export default function BalancePage() {
 
   // Cálculos
   const totalWheelWeight = weights.frontLeft + weights.frontRight + weights.rearLeft + weights.rearRight
-  const totalCarWeight = totalWheelWeight 
+  const carOnlyWeight = Math.max(0, totalWheelWeight - driverWeight)
+  const totalCarWeight = carOnlyWeight + driverWeight 
 
   const frontWeight = weights.frontLeft + weights.frontRight
   const rearWeight = weights.rearLeft + weights.rearRight
@@ -73,6 +76,34 @@ export default function BalancePage() {
     setDriverWeight(0)
   }
 
+  const fetchBalancesHistory = async () => {
+    if (selectedCarId) {
+      try {
+        const history = await db.balances
+          .where('carroId')
+          .equals(Number(selectedCarId))
+          .reverse()
+          .sortBy('dataRegistro');
+        setBalancesHistory(history);
+      } catch (error) {
+        console.error("Erro ao buscar histórico de balanceamento:", error);
+      }
+    } else {
+      setBalancesHistory([]);
+    }
+  };
+
+  const handleDeleteBalance = async (id: number) => {
+    if (window.confirm("Tem certeza que deseja excluir este registro de balanceamento?")) {
+      try {
+        await db.balances.delete(id);
+        fetchBalancesHistory();
+      } catch (error) {
+        alert("Erro ao excluir registro de balanceamento.");
+      }
+    }
+  };
+
   const handleSaveBalance = async () => { // Make it async
     if (!selectedCarId || !currentUser) {
       alert("Por favor, selecione um carro e faça login."); // More user-friendly message
@@ -92,10 +123,15 @@ export default function BalancePage() {
         pesoTotalCarro: totalCarWeight, // Pass calculated value
       });
       alert("Balanceamento salvo com sucesso!");
+      fetchBalancesHistory();
     } catch (error) {
-      alert(`Erro ao salvar balanceamento: ${error.message || 'Erro desconhecido'}`);
+      alert(`Erro ao salvar balanceamento: ${(error as any).message || 'Erro desconhecido'}`);
     }
   };
+
+  useEffect(() => {
+    fetchBalancesHistory();
+  }, [selectedCarId]);
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-background via-card to-background">
@@ -406,7 +442,7 @@ export default function BalancePage() {
                 <CardContent className="space-y-3">
                   <div className="flex justify-between">
                     <span className="text-sm text-muted-foreground">Peso Rodas</span>
-                    <span className="text-sm font-semibold text-foreground">{totalWheelWeight.toFixed(1)} kg</span>
+                    <span className="text-sm font-semibold text-foreground">{carOnlyWeight.toFixed(1)} kg</span>
                   </div>
                   <div className="flex justify-between">
                     <span className="text-sm text-muted-foreground">Peso Piloto</span>
@@ -420,6 +456,87 @@ export default function BalancePage() {
               </Card>
             </div>
           </div>
+        </div>
+
+        {/* Histórico de Balanceamento */}
+        <div className="mt-12">
+          <Card className="bg-card/50 backdrop-blur border-border/50">
+            <CardHeader>
+              <CardTitle className="text-foreground">Histórico de Balanceamento</CardTitle>
+              <CardDescription>Visualização dos registros de balanceamento anteriores para este carro</CardDescription>
+            </CardHeader>
+            <CardContent>
+              {balancesHistory.length === 0 ? (
+                <p className="text-center text-muted-foreground py-8">Nenhum histórico encontrado para este carro.</p>
+              ) : (
+                <div className="overflow-x-auto">
+                  <table className="w-full text-left text-sm text-foreground">
+                    <thead className="border-b border-border text-xs uppercase text-muted-foreground bg-muted/30">
+                      <tr>
+                        <th className="p-3">Data</th>
+                        <th className="p-3">Piloto</th>
+                        <th className="p-3">DE / DD (kg)</th>
+                        <th className="p-3">TE / TD (kg)</th>
+                        <th className="p-3">Carro Vazio</th>
+                        <th className="p-3">Total</th>
+                        <th className="p-3">Dianteira %</th>
+                        <th className="p-3">Esquerda %</th>
+                        <th className="p-3">Diagonal %</th>
+                        <th className="p-3 text-right">Ações</th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-border/50">
+                      {balancesHistory.map((b) => {
+                        const dateStr = b.dataRegistro ? new Date(b.dataRegistro).toLocaleDateString("pt-BR", {
+                          day: "2-digit",
+                          month: "2-digit",
+                          year: "numeric",
+                          hour: "2-digit",
+                          minute: "2-digit"
+                        }) : "N/A";
+                        
+                        const de = b.pesoRodaDianteiraE || 0;
+                        const dd = b.pesoRodaDianteiraD || 0;
+                        const te = b.pesoRodaTraseiraE || 0;
+                        const td = b.pesoRodaTraseiraD || 0;
+                        const total = b.pesoTotalCarro || (de + dd + te + td);
+                        const pilot = b.pesoPiloto || 0;
+                        const carWeight = Math.max(0, total - pilot);
+                        
+                        const frontPct = total > 0 ? ((de + dd) / total) * 100 : 0;
+                        const leftPct = total > 0 ? ((de + te) / total) * 100 : 0;
+                        const diagPct = total > 0 ? ((de + td) / total) * 100 : 0;
+                        
+                        return (
+                          <tr key={b.id} className="hover:bg-muted/10 transition-colors">
+                            <td className="p-3 font-medium whitespace-nowrap">{dateStr}</td>
+                            <td className="p-3 whitespace-nowrap">{b.pesoPiloto ? `${pilot.toFixed(1)} kg` : "Sem piloto"}</td>
+                            <td className="p-3 whitespace-nowrap">{de.toFixed(0)} / {dd.toFixed(0)}</td>
+                            <td className="p-3 whitespace-nowrap">{te.toFixed(0)} / {td.toFixed(0)}</td>
+                            <td className="p-3 font-semibold text-primary whitespace-nowrap">{carWeight.toFixed(1)} kg</td>
+                            <td className="p-3 font-semibold whitespace-nowrap">{total.toFixed(1)} kg</td>
+                            <td className="p-3 whitespace-nowrap">{frontPct.toFixed(1)}%</td>
+                            <td className="p-3 whitespace-nowrap">{leftPct.toFixed(1)}%</td>
+                            <td className="p-3 whitespace-nowrap">{diagPct.toFixed(1)}%</td>
+                            <td className="p-3 text-right">
+                              <Button
+                                size="sm"
+                                variant="ghost"
+                                className="text-red-500 hover:text-red-700 hover:bg-red-500/10 p-2 h-auto"
+                                onClick={() => handleDeleteBalance(b.id)}
+                              >
+                                <Trash2 className="w-4 h-4" />
+                              </Button>
+                            </td>
+                          </tr>
+                        );
+                      })}
+                    </tbody>
+                  </table>
+                </div>
+              )}
+            </CardContent>
+          </Card>
         </div>
       </div>
     </div>

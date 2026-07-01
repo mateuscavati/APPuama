@@ -18,6 +18,34 @@ import {
   ResponsiveContainer,
 } from "recharts"
 
+const getReportDurationHours = (r: Report): number => {
+  if (r.tempoTotal) {
+    const parts = r.tempoTotal.split(":");
+    if (parts.length === 2) {
+      const hours = parseInt(parts[0], 10);
+      const minutes = parseInt(parts[1], 10);
+      if (!isNaN(hours) && !isNaN(minutes)) {
+        return hours + minutes / 60;
+      }
+    }
+  }
+  
+  if (r.horaInicio && r.horaFim) {
+    try {
+      const start = new Date(r.horaInicio);
+      const end = new Date(r.horaFim);
+      if (!isNaN(start.getTime()) && !isNaN(end.getTime())) {
+        const diffMs = end.getTime() - start.getTime();
+        const diffHours = diffMs / (1000 * 60 * 60);
+        return diffHours >= 0 ? diffHours : 0;
+      }
+    } catch (e) {
+      // ignore
+    }
+  }
+  return 0;
+};
+
 export default function DashboardPage() {
   const { cars, fetchCars, getCarReports, getCarLatestBalance } = useAuth()
   const [selectedCarId, setSelectedCarId] = useState("")
@@ -84,7 +112,7 @@ export default function DashboardPage() {
   })();
   const totalReports = carReports.length
   const totalDistance = carReports.reduce((sum, r) => sum + (r.distanciaPercorrida || 0), 0)
-  const totalTestTime = carReports.reduce((sum, r) => sum + (parseFloat(r.tempoTotal || '0') || 0), 0);
+  const totalTestTime = carReports.reduce((sum, r) => sum + getReportDurationHours(r), 0);
   
   const last5Reports = carReports.slice(-5)
 
@@ -97,16 +125,7 @@ export default function DashboardPage() {
   const performanceData = last5Reports.map((r, i) => ({
     date: `Report ${i + 1}`,
     kmPercorridos: r.distanciaPercorrida || 0,
-    tempoTeste:
-      r.horaInicio && r.horaFim
-        ? (() => {
-            const [startH, startM] = r.horaInicio.split(":").map(Number)
-            const [endH, endM] = r.horaFim.split(":").map(Number)
-            const totalMinutesStart = startH * 60 + startM;
-            const totalMinutesEnd = endH * 60 + endM;
-            return (totalMinutesEnd - totalMinutesStart) / 60; // Convert to hours
-          })()
-        : 0,
+    tempoTeste: getReportDurationHours(r),
   }))
 
   const tireWearData = lastReport

@@ -7,11 +7,39 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Button } from "@/components/ui/button"
 import { CheckCircle2, Gauge, FileText, BarChart3, LogOut, Settings } from "lucide-react"
 import { useRouter } from "next/navigation"
+import { db } from "@/lib/db"
 
 export default function Home() {
   const { currentUser, logout, getLatestReport, carChecklistOverallStatus, cars } = useAuth()
   const router = useRouter()
   const [lastReportDate, setLastReportDate] = useState<string | null>(null);
+  const [carWeight, setCarWeight] = useState<string>("--");
+
+  useEffect(() => {
+    const fetchLatestBalance = async () => {
+      if (currentUser) {
+        try {
+          const localBalances = await db.balances.reverse().sortBy('dataRegistro');
+          if (localBalances.length > 0) {
+            const b = localBalances[0];
+            const total = b.pesoTotalCarro || 0;
+            const pilot = b.pesoPiloto || 0;
+            const emptyCarWeight = total - pilot;
+            if (emptyCarWeight > 0) {
+              setCarWeight(`${emptyCarWeight.toFixed(1)} kg`);
+            } else {
+              setCarWeight("N/A");
+            }
+          } else {
+            setCarWeight("Sem dados");
+          }
+        } catch (error) {
+          setCarWeight("Erro");
+        }
+      }
+    };
+    fetchLatestBalance();
+  }, [currentUser]);
 
   const getFormattedCurrentDate = () => {
     const today = new Date();
@@ -206,8 +234,8 @@ export default function Home() {
                 <p className={`text-2xl font-bold ${statusColor}`}>{statusText}</p>
               </div>
               <div>
-                <p className="text-sm text-muted-foreground">Peso Total</p>
-                <p className="text-2xl font-bold text-foreground">219 kg</p>
+                <p className="text-sm text-muted-foreground">Peso do Carro</p>
+                <p className="text-2xl font-bold text-foreground">{carWeight}</p>
               </div>
               <div>
                 <p className="text-sm text-muted-foreground">Dia de hoje</p>
